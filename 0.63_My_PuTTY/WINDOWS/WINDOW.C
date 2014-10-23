@@ -7385,7 +7385,9 @@ void fatalbox(char *fmt, ...)
     stuff = dupvprintf(fmt, ap);
     va_end(ap);
     sprintf(morestuff, "%.70s Fatal Error", appname);
-    MessageBox(hwnd, stuff, morestuff, MB_ICONERROR | MB_OK);
+    // NIXIN: removed messagebox, instead opens eventlog
+    showeventlog(hwnd);
+    //MessageBox(hwnd, stuff, morestuff, MB_ICONERROR | MB_OK);
     sfree(stuff);
     cleanup_exit(1);
 }
