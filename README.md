@@ -1,0 +1,1 @@
+[How to compile KiTTY under MingW](https://nesity.improwizuj.pl/2013/09/17/how-to-compile-putty-or-kitty-under-mingw/)
