@@ -5,7 +5,7 @@
 #ifndef _URLHACK_H
 #define _URLHACK_H
 
-#include "re_lib/regexp.h"
+#include "regex.h"
 
 typedef struct { int x0, y0, x1, y1; } text_region;
 
@@ -38,5 +38,6 @@ void urlhack_init();
 void urlhack_cleanup();
 
 void SetHyperlinkFlag( const int flag ) ;
+void FixWrongRegex() ;
 
 #endif // _URLHACK_H

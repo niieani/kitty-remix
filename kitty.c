@@ -134,6 +134,8 @@ char * ScriptCommand = NULL ;
 
 // Pointeur sur la commande a passer ligne a ligne
 char * PasteCommand = NULL ;
+
+// Flag pour utiliser la commande paste ligne a ligne (shift+bouton droit au lieu de bouton droit seul) dans le cas de serveur lent
 static int PasteCommandFlag = 0 ;
 int GetPasteCommandFlag(void) { return PasteCommandFlag ; }
 
@@ -304,7 +306,7 @@ void SetReconnectDelay( const int flag ) { ReconnectDelay = flag ; }
 // Le patch est desactive par defaut
 int BackgroundImageFlag = 0 ;
 #else
-static int BackgroundImageFlag = 0 ;
+int BackgroundImageFlag = 0 ;
 #endif
 
 // Flag pour afficher l'image de fond vi la patch IV
@@ -1086,7 +1088,8 @@ void QueryKey( HKEY hMainKey, LPCTSTR lpSubKey, FILE * fp_out ) {
 					case REG_DWORD:
 						//fprintf( fp_out, "dword:%08x", *(int*)(lpData) ) ;
 						//sprintf( str, "\"%s\"=dword:%08x", achValue, *(int*)(lpData) ) ;
-						sprintf( str, "\"%s\"=dword:%08x", achValue, (int)(*(LPBYTE)(lpData)) ) ;
+						//sprintf( str, "\"%s\"=dword:%08x", achValue, (int)(*(LPBYTE)(lpData)) ) ;
+						sprintf( str, "\"%s\"=dword:%08x", achValue, *((DWORD*)lpData) ) ;
 						break;
 					case REG_EXPAND_SZ:
 					case REG_MULTI_SZ:
@@ -1201,7 +1204,7 @@ void CountUp( void ) {
 			}
 		}
 		
-	sprintf( buffer, "%s\\Sessions", PUTTY_REG_POS ) ;	
+	sprintf( buffer, "%s\\Sessions", PUTTY_REG_POS ) ;
 	n = (long int) RegCountKey( HKEY_CURRENT_USER, buffer ) ;
 	sprintf( buffer, "%ld", n ) ;
 	WriteParameter( INIT_SECTION, "KiSess", buffer) ;

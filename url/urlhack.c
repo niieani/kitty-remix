@@ -22,7 +22,8 @@ const char* urlhack_default_regex = "(((https?|ftp):\\/\\/)|www\\.)(([0-9]+\\.[0
 */
 
 const char* urlhack_default_regex =  "(((https?|ftp):\\/\\/)|www\\.)(([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)|localhost|([a-zA-Z0-9\\-]+\\.)*[a-zA-Z0-9\\-]+\\.(com|net|org|info|biz|gov|name|edu|[a-zA-Z][a-zA-Z]))(:[0-9]+)?((\\/|\\?)[^ \"]*[^ ,;\\.:\">)])?";
-
+//"((https?:\\/\\/)?(www\\.)?(([a-zA-Z0-9-]){2,}\\.){1,4}([a-zA-Z]){2,6}(:[0-9]{2,})?(\\/([a-zA-Z-_/.0-9#:+?%=&;,]*)?)?" ;
+//"((https?|ftp):\\/\\/)?(www\\.)?([a-zA-Z0-9-]{2,}\\.){1,4}[a-zA-Z]{2,6}(:[0-9]{2,5})?(\\/[a-zA-Z0-9-]*)*[/]?(\\?[^ 	\n\r]*)?";
 
 const char* urlhack_liberal_regex =
     "("
@@ -137,15 +138,15 @@ void urlhack_link_regions_clear()
 }
 
 // Regular expression stuff
-
 static int urlhack_disabled = 0;
 static int is_regexp_compiled = 0;
-static regexp* urlhack_rx=NULL;
-
+static regex_t urlhack_rx ;
 static char *window_text;
 static int window_text_len;
 static int window_text_current_pos;
-
+void urlhack_enable(void){
+	urlhack_disabled=0;
+}
 void urlhack_init()
 {
     unsigned int i;
@@ -205,39 +206,60 @@ static void rtfm(char *error)
 	
 }
 
+void logevent(void *frontend, const char *string);
+
+static void (*regerror_func)( char* s) = 0;
+void set_regerror_func( void (*func)( char*))
+{
+	regerror_func = func;
+}
+
+#ifndef REG_NOSUB
+#define REG_NOSUB 0004
+#endif
 void urlhack_set_regular_expression(int mode, const char* expression)
 {
 #ifndef NO_HYPERLINK
-    const char *to_use=NULL;
+    char *to_use=NULL;
     switch (mode) {
     case URLHACK_REGEX_CUSTOM:
-        to_use = expression;
+	if( to_use!= NULL) { free(to_use) ; }
+	to_use = (char*)malloc(strlen(expression)+1); 
+	strcpy(to_use,expression);
+        //to_use = expression;
         break;
     case URLHACK_REGEX_CLASSIC:
-        to_use = urlhack_default_regex;
+	if( to_use!= NULL) { free(to_use) ; }
+	to_use = (char*)malloc(strlen(urlhack_default_regex)+1); 
+	strcpy(to_use,urlhack_default_regex);
+        //to_use = urlhack_default_regex;
         break;
     case URLHACK_REGEX_LIBERAL:
-        to_use = urlhack_liberal_regex;
+	if( to_use!= NULL) { free(to_use) ; }
+	to_use = (char*)malloc(strlen(urlhack_liberal_regex)+1); 
+	strcpy(to_use,urlhack_liberal_regex);
+        //to_use = urlhack_liberal_regex;
         break;
     default:
         assert(!"illegal default regex setting");
     }
    
-    is_regexp_compiled = 0;
-    urlhack_disabled = 0;
-    if (urlhack_rx != NULL) { 
-	    regfree(urlhack_rx);
-	    urlhack_rx=NULL; 
-	    }
-
-    set_regerror_func(rtfm);
-    urlhack_rx = regcomp((char*)(to_use));
-
-    if (urlhack_rx == 0) {
-        urlhack_disabled = 1;
+    if( is_regexp_compiled ) { 
+	regfree(&urlhack_rx);
+	is_regexp_compiled = 0;
     }
-
-    is_regexp_compiled = 1;
+        //set_regerror_func(rtfm);
+	int result ;
+	if( (result=regcomp(&urlhack_rx,(char*)(to_use),REG_EXTENDED)) != 0 ){
+		urlhack_disabled = 1;
+		char buffer[512]="";
+		regerror(result, &urlhack_rx, buffer, sizeof buffer);
+		rtfm(buffer);
+	}
+	else { 
+		is_regexp_compiled = 1 ; 
+		logevent(NULL, "Hyperlink patch: regex successfully compiled" ) ;
+	}
 #endif
 }
 
@@ -245,25 +267,44 @@ void urlhack_go_find_me_some_hyperlinks(int screen_width)
 {
 #ifndef NO_HYPERLINK
     char* text_pos;
-    if (urlhack_disabled != 0) return;
+	
+    if( urlhack_disabled!=0 ) {
+	    return ;
+    }
     if (is_regexp_compiled == 0) {
         urlhack_set_regular_expression(URLHACK_REGEX_CLASSIC,urlhack_default_regex);
+	if( !is_regexp_compiled ) return ;
     }
     urlhack_link_regions_clear();
     text_pos = window_text;
-    while (regexec(urlhack_rx, text_pos) == 1) {
-        char* start_pos = *urlhack_rx->startp[0] == ' ' ? urlhack_rx->startp[0] + 1: urlhack_rx->startp[0];
+	regmatch_t groupArray;
+	int error ;
+    error = regexec(&urlhack_rx, text_pos, 1, &groupArray ,0) ;
+    while( error==0 ) {
+
+	    char* start_pos = text_pos + groupArray.rm_so ; if(start_pos[0]==' ') start_pos++ ;
 
         int x0 = (start_pos - window_text) % screen_width;
         int y0 = (start_pos - window_text) / screen_width;
-        int x1 = (urlhack_rx->endp[0] - window_text) % screen_width;
-        int y1 = (urlhack_rx->endp[0] - window_text) / screen_width;
-
-        if (x0 >= screen_width) x0 = screen_width - 1;
+	    
+	int x1 = (text_pos + groupArray.rm_eo - window_text) % screen_width;
+        int y1 = (text_pos + groupArray.rm_eo - window_text) / screen_width;
+	    
+	if (x0 >= screen_width) x0 = screen_width - 1;
         if (x1 >= screen_width) x1 = screen_width - 1;
         urlhack_add_link_region(x0, y0, x1, y1);
-
-        text_pos = urlhack_rx->endp[0] + 1;
-    }
+		    
+	text_pos = text_pos + groupArray.rm_eo + 1;
+	error = regexec(&urlhack_rx, text_pos, 1, &groupArray ,REG_NOTBOL) ;
+	}
 #endif
+}
+
+
+/*
+Function pour corriger le probleme de mauvaise regex !
+*/
+void InitRegistryAllSessions( HKEY hMainKey, LPCTSTR lpSubKey, char * SubKeyName, char * filename, char * text ) ;
+void FixWrongRegex() {
+	InitRegistryAllSessions( HKEY_CURRENT_USER, "Software\\9bis.com\\KiTTY", "Sessions", "hyperlinkfix.reg", "\"HyperlinkRegularExpression\"=\"(((https?|ftp):\\/\\/)|www\\.)(([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)|localhost|([a-zA-Z0-9\\-]+\\.)*[a-zA-Z0-9\\-]+\\.(com|net|org|info|biz|gov|name|edu|[a-zA-Z][a-zA-Z]))(:[0-9]+)?((\\/|\\?)[^ \"]*[^ ,;\\.:\">)])?\"" ) ;
 }

@@ -1213,8 +1213,8 @@ void load_open_settings(void *sesskey, Conf *conf)
 	 * HACK: PuttyTray / Nutty
 	 * Hyperlink stuff: Load hyperlink settings
 	 */
-	gppi(sesskey, "HyperlinkUnderline", 1, conf, CONF_url_underline);
-	gppi(sesskey, "HyperlinkUseCtrlClick", 0, conf, CONF_url_ctrl_click);
+	gppi(sesskey, "HyperlinkUnderline", 0, conf, CONF_url_underline);
+	gppi(sesskey, "HyperlinkUseCtrlClick", 1, conf, CONF_url_ctrl_click);
 	gppi(sesskey, "HyperlinkBrowserUseDefault", 1, conf, CONF_url_defbrowser);
 	gppfile(sesskey, "HyperlinkBrowser", conf, CONF_url_browser);
 	gppi(sesskey, "HyperlinkRegularExpressionUseDefault", 1, conf, CONF_url_defregex);

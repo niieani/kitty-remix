@@ -27,7 +27,10 @@ void RegTestOrCreate( HKEY hMainKey, LPCTSTR lpSubKey, LPCTSTR name, LPCTSTR val
 // Test l'existance d'une clé ou bien d'une valeur DWORD et la crée sinon
 void RegTestOrCreateDWORD( HKEY hMainKey, LPCTSTR lpSubKey, LPCTSTR name, DWORD value ) ;
 
-// Initialise toutes les sessions avec une valeur
+// Initialise toutes les sessions avec une valeur (si oldvalue==NULL) ou uniquement celles qui ont la valeur oldvalue
+void RegUpdateAllSessions( HKEY hMainKey, LPCTSTR lpSubKey, LPCTSTR name, LPCTSTR oldvalue, LPCTSTR value  ) ;
+
+// Exporte toute une cle de registre
 void QuerySubKey( HKEY hMainKey, LPCTSTR lpSubKey, FILE * fp_out, char * text  ) ;
 
 // Détruit une valeur de clé de registre 
@@ -52,6 +55,8 @@ void CreateFileAssoc() ;
 void TestRegKeyOrCopyFromPuTTY( HKEY hMainKey, char * KeyName ) ;
 
 void InitRegistryAllSessions( HKEY hMainKey, LPCTSTR lpSubKey, char * SubKeyName, char * filename, char * text ) ;
+
+// Permet d'initialiser toutes les sessions avec des valeurs contenu dans un fichier kitty.ses.updt
 void InitAllSessions( HKEY hMainKey, LPCTSTR lpSubKey, char * SubKeyName, char * filename ) ;
 	
 #endif
