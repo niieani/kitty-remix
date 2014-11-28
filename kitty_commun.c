@@ -150,7 +150,9 @@ int backend_connected = 0 ;
 
 void SetSSHConnected( void ) { backend_connected = 1 ; }
 
+#ifndef _MSC_VER
 PVOID SecureZeroMemory( PVOID ptr, SIZE_T cnt) { return memset( ptr, 0, cnt ) ; }
+#endif
 
 // Fonction permettant de changer le statut du stockage automatique des ssh host keys
 void SetAutoStoreSSHKey( void ) {
