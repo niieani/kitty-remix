@@ -284,6 +284,7 @@ BOOL RegDelTree (HKEY hKeyRoot, LPCTSTR lpSubKey) {
 	return FALSE;
 	}
 
+#ifndef _MSC_VER
 // Copie une clé de registre vers une autre
 void RegCopyTree( HKEY hMainKey, LPCTSTR lpSubKey, LPCTSTR lpDestKey ) { 
 	HKEY hKey, hDestKey ;
@@ -393,6 +394,7 @@ void RegCopyTree( HKEY hMainKey, LPCTSTR lpSubKey, LPCTSTR lpDestKey ) {
  
 	RegCloseKey( hKey ) ;
 }
+#endif
 
 // Nettoie la clé de PuTTY pour enlever les clés et valeurs spécifique à KiTTY
 BOOL RegCleanPuTTY( void ) {
