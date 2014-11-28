@@ -1,6 +1,9 @@
 #ifndef KITTY_REGISTRY
 #define KITTY_REGISTRY
 
+#ifndef AUTO_WINSOCK
+#include <winsock2.h>
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <windows.h>
