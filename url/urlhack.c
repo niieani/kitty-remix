@@ -209,11 +209,12 @@ static void rtfm(char *error)
 void logevent(void *frontend, const char *string);
 
 static void (*regerror_func)( char* s) = 0;
+/*
 void set_regerror_func( void (*func)( char*))
 {
 	regerror_func = func;
 }
-
+*/
 #ifndef REG_NOSUB
 #define REG_NOSUB 0004
 #endif
