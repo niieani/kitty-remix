@@ -671,6 +671,36 @@ void xyz_updateMenuItems(Terminal *term)
 }
 #endif
 
+#ifdef _MSC_VER
+
+#define snprintf c99_snprintf
+
+int c99_snprintf(char* str, size_t size, const char* format, ...)
+{
+	int count;
+	va_list ap;
+
+	va_start(ap, format);
+	count = c99_vsnprintf(str, size, format, ap);
+	va_end(ap);
+
+	return count;
+}
+
+int c99_vsnprintf(char* str, size_t size, const char* format, va_list ap)
+{
+	int count = -1;
+
+	if (size != 0)
+		count = _vsnprintf_s(str, size, _TRUNCATE, format, ap);
+	if (count == -1)
+		count = _vscprintf(format, ap);
+
+	return count;
+}
+
+#endif // _MSC_VER
+
 char * kitty_current_dir() { 
 	static char cdir[1024]; 
 
@@ -792,7 +822,7 @@ void InitFolderList( void ) {
 			closedir( dir ) ;
 			}
 		}
-	
+#ifdef KITTY_INI
 	if( readINI( KittyIniFile, "Folder", "new", buffer ) ) {
 		if( strlen( buffer ) > 0 ) {
 			for( i=0; i<strlen(buffer); i++ ) if( buffer[i]==',' ) buffer[i]='\0' ;
@@ -800,6 +830,7 @@ void InitFolderList( void ) {
 			}
 		delINI( KittyIniFile, "Folder", "new" ) ;
 		}
+#endif
 	
 	}
 
@@ -949,6 +980,7 @@ int GetSessionField( const char * session_in, const char * folder_in, const char
 	}
 	
 void RenewPassword( Conf *conf ) {
+#ifdef KITTY_BCRYPT
 	if( !UserPassSSHNoSave )
 	if( strlen( conf_get_str(conf,CONF_password) ) == 0 ) {
 		char buffer[1024] = "", host[1024], termtype[1024] ;
@@ -962,9 +994,11 @@ void RenewPassword( Conf *conf ) {
 			memset(buffer,0,strlen(buffer) );
 			}
 		}
+#endif
 	}
 
-void SetPasswordInConfig( char * password ) {
+void SetPasswordInConfig(char * password) {
+#ifdef KITTY_BCRYPT
 	int len ;
 	char bufpass[256] ;
 	if( (!UserPassSSHNoSave)&&(password!=NULL) ) {
@@ -980,6 +1014,7 @@ void SetPasswordInConfig( char * password ) {
 		}
 		conf_set_str(conf,CONF_password,bufpass);
 		}
+#endif
 	}
 	
 void SetUsernameInConfig( char * username ) {
@@ -1160,6 +1195,7 @@ void RepliqueToPuTTY( LPCTSTR Key ) {
 #ifdef FDJ
 return ;
 #endif
+#ifdef KITTY_INI
 	if( readINI( KittyIniFile, "PuTTY", "keys", buffer ) ) {
 		while( (buffer[strlen(buffer)-1]=='\n')||(buffer[strlen(buffer)-1]=='\r')||(buffer[strlen(buffer)-1]==' ')||(buffer[strlen(buffer)-1]=='\t') ) buffer[strlen(buffer)-1]='\0';
 		if( !stricmp( buffer, "load" ) ) {
@@ -1172,6 +1208,7 @@ return ;
 		//delINI( KittyIniFile, "PuTTY", "keys" ) ;
 		RegCleanPuTTY() ;
 		}
+#endif
 	}
 
 
@@ -1199,7 +1236,9 @@ void CountUp( void ) {
 		strcat( buffer, "@" ) ;
 		len = 1024 ;
 		if( GetComputerName( buffer+strlen(buffer), (void*)&len ) ) {
+#ifdef KITTY_BCRYPT
 			cryptstring( buffer, MASTER_PASSWORD ) ;
+#endif
 			WriteParameter( INIT_SECTION, "KiLastUH", buffer) ;
 			}
 		}
@@ -1210,13 +1249,15 @@ void CountUp( void ) {
 	WriteParameter( INIT_SECTION, "KiSess", buffer) ;
 		
 	GetOSInfo( buffer ) ;
+#ifdef KITTY_BCRYPT
 	cryptstring( buffer, MASTER_PASSWORD ) ;
+#endif
 	WriteParameter( INIT_SECTION, "KiVers", buffer) ;
 		
 	if( GetModuleFileName( NULL, (LPTSTR)buffer, 1024 ) ) 
 		if( strlen( buffer ) > 0 ) 
 			{ WriteParameter( INIT_SECTION, "KiPath", buffer) ; }
-			
+#ifdef KITTY_BCRYPT
 	if( ReadParameter( INIT_SECTION, "KiLic", buffer ) == 0 ) { 
 		strcpy( buffer, "KI63" ) ;
 		license_make_with_first( buffer, 25, 97, 0 )  ;
@@ -1229,6 +1270,7 @@ void CountUp( void ) {
 		license_form( buffer, '-', 5 ) ;
 		WriteParameter( INIT_SECTION, "KiLic", buffer) ; 
 		}
+#endif
 	}
 	
 // Si le fichier kitty.ini n'existe pas => creation du fichier par defaut
@@ -1347,9 +1389,13 @@ int ReadParameter( const char * key, const char * name, char * value ) {
 	strcpy( buffer, "" ) ;
 
 	if( GetValueData( HKEY_CURRENT_USER, TEXT(PUTTY_REG_POS), name, buffer ) == NULL ) {
+#ifdef KITTY_INI
 		if( !readINI( KittyIniFile, key, name, buffer ) ) {
 			strcpy( buffer, "" ) ;
 			}
+#else
+		strcpy(buffer, "");
+#endif
 		}
 	strcpy( value, buffer ) ;
 	return strcmp( buffer, "" ) ;
@@ -1368,12 +1414,14 @@ int DelParameter( const char * key, const char * name ) {
 void GetSaveMode( void ) {
 #ifndef PORTABLE
 	char buffer[256] ;
+#ifdef KITTY_INI
 	if( readINI( KittyIniFile, INIT_SECTION, "savemode", buffer ) ) {
 		while( (buffer[strlen(buffer)-1]=='\n')||(buffer[strlen(buffer)-1]=='\r')||(buffer[strlen(buffer)-1]==' ')||(buffer[strlen(buffer)-1]=='\t') ) buffer[strlen(buffer)-1]='\0';
 		if( !stricmp( buffer, "registry" ) ) IniFileFlag = SAVEMODE_REG ;
 		else if( !stricmp( buffer, "file" ) ) IniFileFlag = SAVEMODE_FILE ;
 		else if( !stricmp( buffer, "dir" ) ) { IniFileFlag = SAVEMODE_DIR ; DirectoryBrowseFlag = 1 ; }
 		}
+#endif
 #endif
 	if( IniFileFlag!=SAVEMODE_DIR ) DirectoryBrowseFlag = 0 ;
 	}
@@ -1972,7 +2020,9 @@ void SendOneFile( HWND hwnd, char * directory, char * filename, char * distantdi
 		strcat( buffer, "-pw \"" ) ;
 		char bufpass[128] ;
 		strcpy( bufpass, conf_get_str(conf,CONF_password) ) ;
+#ifdef KITTY_BCRYPT
 		MASKPASS(bufpass) ; strcat( buffer, bufpass ) ; memset( bufpass, 0, strlen(bufpass) ) ;
+#endif
 		strcat( buffer, "\" " ) ;
 		}
 	if( strlen( conf_get_filename(conf, CONF_keyfile)/*cfg.keyfile*/->path ) > 0 ) {
@@ -2105,7 +2155,9 @@ void GetOneFile( HWND hwnd, char * directory, char * filename ) {
 		strcat( buffer, "-pw \"" ) ;
 		char bufpass[128] ;
 		strcpy( bufpass,conf_get_str(conf,CONF_password) ) ;
+#ifdef KITTY_BCRYPT
 		MASKPASS(bufpass); strcat( buffer, bufpass ) ; memset(bufpass,0,strlen(bufpass));
+#endif
 		strcat( buffer, "\" " ) ;
 		}
 	if( strlen( conf_get_filename(conf,CONF_keyfile)/*cfg.keyfile.*/->path ) > 0 ) {
@@ -2197,7 +2249,9 @@ void GetFile( HWND hwnd ) {
 					strcat( buffer, "-pw " ) ;
 					char bufpass[128] ;
 					strcpy( bufpass, conf_get_str(conf,CONF_password) ) ;
+#ifdef KITTY_BCRYPT
 					MASKPASS(bufpass); strcat( buffer, bufpass ) ; memset(bufpass,0,strlen(bufpass));
+#endif
 					strcat( buffer, " " ) ;
 					}
 				if( strlen( conf_get_filename(conf,CONF_keyfile)/*cfg.keyfile.*/->path ) > 0 ) {
@@ -2339,12 +2393,14 @@ int ManageLocalCmd( HWND hwnd, char * cmd ) {
 		// free( RemotePath ) ; RemotePath = NULL ;
 		return 1 ;
 		}
+#ifdef KITTY_URLHACK
 	else if( (cmd[0]=='i')&&(cmd[1]=='e')&&(cmd[2]==':') ) { // __ie: Lance un navigateur sur le lien
 		if( strlen(cmd+3)>0 ) {
 			urlhack_launch_url(!conf_get_int(conf,CONF_url_defbrowser)?conf_get_filename(conf,CONF_url_browser)->path:NULL, (const char *)(cmd+3));
 			return 1;
 			}
 		}
+#endif
 	else if( (cmd[0]=='d')&&(cmd[1]=='s')&&(cmd[2]==':') ) { // __ds: Lance une session dupliquee dans le meme repertoire ds() { printf "\033]0;__ds:`pwd`\007" ; }
 		if( RemotePath!= NULL ) free( RemotePath ) ;
 		RemotePath = (char*) malloc( strlen( cmd ) - 2 ) ;
@@ -3420,7 +3476,9 @@ int InternalCommand( HWND hwnd, char * st ) {
 		if( strlen( conf_get_str(conf,CONF_password) ) > 0 ) {
 			char bufpass[128], buffer[1024] ;
 			strcpy( bufpass, conf_get_str(conf,CONF_password) ) ;
+#ifdef KITTY_BCRYPT
 			MASKPASS(bufpass);
+#endif
 			sprintf( buffer, "Your password is\n-%s-", bufpass ) ;
 			memset(bufpass,0,strlen(bufpass));
 			MessageBox( hwnd, buffer, "Password", MB_OK|MB_ICONWARNING ) ;
@@ -3568,7 +3626,9 @@ void StartNewSession( HWND hwnd, char * directory ) {
 			char bufpass[128] ;
 			strcpy( bufpass, conf_get_str(conf,CONF_password) ) ;
 			strcat( cmd, " -pw " ) ; 
+#ifdef KITTY_BCRYPT
 			MASKPASS(bufpass) ; 
+#endif
 			strcat(cmd,"\"") ; strcat(cmd,bufpass) ; strcat(cmd,"\"") ;
 			memset(bufpass,0,strlen(bufpass));
 			}
@@ -3588,7 +3648,9 @@ void StartNewSession( HWND hwnd, char * directory ) {
 			char bufpass[128] ;
 			strcpy(bufpass,conf_get_str(conf,CONF_password));
 			strcat( cmd, " -pw " ) ; 
+#ifdef KITTY_BCRYPT
 			MASKPASS(bufpass) ; 
+#endif
 			strcat(cmd,"\"") ; strcat(cmd,bufpass) ; strcat(cmd,"\"") ;
 			memset(bufpass,0,strlen(bufpass));
 			}
@@ -3649,7 +3711,9 @@ void StartWinSCP( HWND hwnd, char * directory ) {
 			char bufpass[128] ;
 			strcat( cmd, ":" ); 
 			strcpy(bufpass,conf_get_str(conf,CONF_password));
+#ifdef KITTY_BCRYPT
 			MASKPASS(bufpass);
+#endif
 			strcat(cmd,bufpass);
 			memset(bufpass,0,strlen(bufpass));
 			}
@@ -3673,7 +3737,9 @@ void StartWinSCP( HWND hwnd, char * directory ) {
 			char bufpass[128] ;
 			strcat( cmd, ":" ); 
 			strcpy(bufpass,conf_get_str(conf,CONF_password));
+#ifdef KITTY_BCRYPT
 			MASKPASS(bufpass);
+#endif
 			strcat(cmd,bufpass);
 			memset(bufpass,0,strlen(bufpass));
 			}
@@ -3924,7 +3990,9 @@ void ReadInitScript( const char * filename ) {
 			pst[0] = '\0' ;
 			l++ ;
 			fclose( fp ) ;
+#ifdef KITTY_BCRYPT
 			bcrypt_string_base64( ScriptFileContent, buffer, l, MASTER_PASSWORD, 0 ) ;
+#endif
 			if( IniFileFlag==SAVEMODE_REG ) {
 				//WriteParameter( INIT_SECTION, "KiCrSt", buffer ) ;
 				}
@@ -4758,10 +4826,10 @@ void InitWinMain( void ) {
 #endif
 
 	//sprintf( BuildVersionTime, "%s.%d @ %s", "0.60", 60, "07/02/2008-22:07:31(GMT)" ) ; // Pour compilation CygWin
-
+#ifdef KITTY_BCRYPT
 	// Initialisation de la librairie de cryptage
 	bcrypt_init( 0 ) ;
-	
+#endif
 	// Recupere le repertoire de depart et le repertoire de la configuration pour savemode=dir
 	GetInitialDirectory( InitialDirectory ) ;
 	

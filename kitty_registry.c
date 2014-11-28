@@ -1,4 +1,7 @@
 #include "kitty_registry.h"
+#ifndef AUTO_WINSOCK
+#include <winsock2.h>
+#endif
 
 //static const int cstMaxRegLength = 1024;
 #define cstMaxRegLength 1024
@@ -284,6 +287,7 @@ BOOL RegDelTree (HKEY hKeyRoot, LPCTSTR lpSubKey) {
 	return FALSE;
 	}
 
+#ifndef VISUALSTUDIO
 // Copie une clé de registre vers une autre
 void RegCopyTree( HKEY hMainKey, LPCTSTR lpSubKey, LPCTSTR lpDestKey ) { 
 	HKEY hKey, hDestKey ;
@@ -393,6 +397,7 @@ void RegCopyTree( HKEY hMainKey, LPCTSTR lpSubKey, LPCTSTR lpDestKey ) {
  
 	RegCloseKey( hKey ) ;
 }
+#endif
 
 // Nettoie la clé de PuTTY pour enlever les clés et valeurs spécifique à KiTTY
 BOOL RegCleanPuTTY( void ) {

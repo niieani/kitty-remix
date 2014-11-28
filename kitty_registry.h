@@ -39,8 +39,10 @@ BOOL RegDelValue (HKEY hKeyRoot, LPTSTR lpSubKey, LPTSTR lpValue ) ;
 // Detruit une clé de registre et ses sous-clé
 BOOL RegDelTree (HKEY hKeyRoot, LPCTSTR lpSubKey) ;
 
+#ifndef VISUALSTUDIO
 // Copie une clé de registre vers une autre
 void RegCopyTree( HKEY hMainKey, LPCTSTR lpSubKey, LPCTSTR lpDestKey ) ;
+#endif
 
 // Nettoie la clé de PuTTY pour enlever les clés et valeurs spécifique à KiTTY
 BOOL RegCleanPuTTY( void ) ;
