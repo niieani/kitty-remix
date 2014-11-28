@@ -1118,10 +1118,10 @@ static void sessionsaver_handler(union control *ctrl, void *dlg,
 #ifdef PERSOPORT
 	     if (load_selected_session(ssd, dlg, conf, &mbl) &&
 		(mbl && ctrl == ssd->listbox && conf_launchable(conf))) {
-		MASKPASS( conf_get_str( conf, CONF_password) );
+		if( conf_get_int(conf, CONF_protocol) != PROT_SERIAL ) MASKPASS( conf_get_str( conf, CONF_password) );
 		dlg_end(dlg, 1);       /* it's all over, and succeeded */
 	    }
-	MASKPASS( conf_get_str( conf, CONF_password) );
+	if( conf_get_int(conf, CONF_protocol) != PROT_SERIAL ) MASKPASS( conf_get_str( conf, CONF_password) );
 #else
 	     if (load_selected_session(ssd, dlg, conf, &mbl) &&
 		(mbl && ctrl == ssd->listbox && conf_launchable(conf))) {
@@ -1152,9 +1152,9 @@ static void sessionsaver_handler(union control *ctrl, void *dlg,
             {
 #ifdef PERSOPORT
 		conf_set_str( conf, CONF_folder, CurrentFolder ) ;
-		MASKPASS( conf_get_str( conf, CONF_password) );
+		if( conf_get_int(conf, CONF_protocol) != PROT_SERIAL ) MASKPASS( conf_get_str( conf, CONF_password) );
 		char *errmsg = save_settings(ssd->savedsession, conf);
-		MASKPASS( conf_get_str( conf, CONF_password) );
+		if( conf_get_int(conf, CONF_protocol) != PROT_SERIAL ) MASKPASS( conf_get_str( conf, CONF_password) );
 #else
                 char *errmsg = save_settings(ssd->savedsession, conf);
 #endif
@@ -1200,7 +1200,7 @@ static void sessionsaver_handler(union control *ctrl, void *dlg,
                 return;
             }
 #ifdef PERSOPORT
-	MASKPASS( conf_get_str( conf, CONF_password) );
+	if( conf_get_int(conf, CONF_protocol) != PROT_SERIAL ) MASKPASS( conf_get_str( conf, CONF_password) );
 #endif
 	    /*
 	     * Annoying special case. If the `Open' button is
@@ -2935,7 +2935,8 @@ void setup_config_box(struct controlbox *b, int midsession,
 		 HELPCTX(no_help),
 		 conf_editbox_handler, I(CONF_portknockingoptions), I(1));
     ctrl_text(s, "The sequence is a list of port:protocol separated by comma. Valid protocols are tcp and udp.",HELPCTX(no_help));
-    ctrl_text(s, "Ex: 2001:tcp, 2002:udp",HELPCTX(no_help));
+    ctrl_text(s, "Special protocol 's' is used to include pause between knocks.",HELPCTX(no_help));
+    ctrl_text(s, "Ex: 2001:tcp, 1:s, 2002:udp",HELPCTX(no_help));
 	}
 #endif
 	}

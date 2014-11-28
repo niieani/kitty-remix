@@ -86,7 +86,7 @@ int ManagePortKnocking( char* host, char *portknockseq ) {
 			port=atoi(portstr);
 			if( !stricmp(protostr,"udp") ) proto=PROTO_UDP ; else proto=PROTO_TCP ;
 			
-			if( knock(host,port,proto) ) logevent( NULL, "Unable to knock port" );
+			if( !stricmp(protostr,"s") ) Sleep(port*1000); else if( knock(host,port,proto) ) logevent( NULL, "Unable to knock port" );
 			}
 		}
 	

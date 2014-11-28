@@ -70,7 +70,7 @@ int RegTestKey( HKEY hMainKey, LPCTSTR lpSubKey ) {
 	RegCloseKey( hKey ) ;
 	return 1 ;
 	}
-
+	
 // Retourne le nombre de sous-keys
 int RegCountKey( HKEY hMainKey, LPCTSTR lpSubKey ) {
 	HKEY hKey ;
@@ -116,7 +116,36 @@ void RegTestOrCreateDWORD( HKEY hMainKey, LPCTSTR lpSubKey, LPCTSTR name, DWORD 
 	RegCloseKey( hKey ) ;
 	}
 	
-// Initialise toutes les sessions avec une valeur
+
+// Initialise toutes les sessions avec une valeur (si oldvalue==NULL) ou uniquement celles qui ont la valeur oldvalue
+void RegUpdateAllSessions( HKEY hMainKey, LPCTSTR lpSubKey, LPCTSTR name, LPCTSTR oldvalue, LPCTSTR value  ) {
+	HKEY hKey ;
+	TCHAR    achClass[MAX_PATH] = TEXT(""), achKey[MAX_KEY_LENGTH]; 
+	DWORD    cchClassName = MAX_PATH, cSubKeys=0, cbMaxSubKey, cbName=MAX_KEY_LENGTH, cchMaxClass, cValues, cchMaxValue, cbMaxValueData, cbSecurityDescriptor ;
+	FILETIME ftLastWriteTime;
+	
+	int i, retCode ;
+	if( RegOpenKeyEx( hMainKey, TEXT(lpSubKey), 0, KEY_READ, &hKey) != ERROR_SUCCESS ) return ;
+	RegQueryInfoKey( hKey, achClass, &cchClassName, NULL, &cSubKeys, &cbMaxSubKey, &cchMaxClass
+		, &cValues, &cchMaxValue, &cbMaxValueData, &cbSecurityDescriptor, &ftLastWriteTime) ;
+
+	if (cSubKeys) {
+		for (i=0; i<cSubKeys; i++) {
+			retCode = RegEnumKeyEx(hKey, i, achKey, &cbName, NULL, NULL, NULL, &ftLastWriteTime); 
+			if (retCode == ERROR_SUCCESS) {
+				char buffer[MAX_KEY_LENGTH] ;
+				char previousvalue[1024] ;
+				sprintf( buffer, "%s\\%s", lpSubKey, achKey ) ;
+				GetValueData( hMainKey, buffer, name, previousvalue ) ;
+				if( (oldvalue==NULL) || ( !strcmp(previousvalue,oldvalue)) )
+					MessageBox(NULL,achKey,"Info",MB_OK);
+					//RegTestOrCreate( hMainKey, buffer, name, value ) ;
+			}
+		}
+	}
+}
+	
+// Exporte toute une cle de registre
 void QuerySubKey( HKEY hMainKey, LPCTSTR lpSubKey, FILE * fp_out, char * text  ) { 
 	HKEY hKey ;
     TCHAR    achKey[MAX_KEY_LENGTH];   // buffer for subkey name

@@ -202,6 +202,7 @@ static HBITMAP caretbm;
 #ifdef HYPERLINKPORT
 #include "urlhack.h"
 static int urlhack_cursor_is_hand = 0;
+void urlhack_enable(void);
 #endif
 
 #ifdef PERSOPORT
@@ -678,6 +679,8 @@ InitWinMain();
 			HyperlinkFlag = 1 ;
 		} else if( !strcmp(p, "-nohyperlink") ) {
 			HyperlinkFlag = 0 ;
+		} else if( !strcmp(p, "-hyperlinkfix") ) {
+			FixWrongRegex();
 #endif
 #endif
 		} else if( !strcmp(p, "-xpos") ) {
@@ -1277,7 +1280,7 @@ TrayIcone.hWnd = hwnd ;
 
 	popup_menus[SYSMENU].menu = GetSystemMenu(hwnd, FALSE);
 #ifdef TUTTYPORT
-	EnableMenuItem(m, SC_CLOSE, conf_get_int(conf,CONF_window_closable) ? MF_ENABLED : MF_GRAYED);
+	EnableMenuItem(popup_menus[SYSMENU].menu, SC_CLOSE, conf_get_int(conf,CONF_window_closable) ? MF_ENABLED : MF_GRAYED);
 #endif
 	popup_menus[CTXMENU].menu = CreatePopupMenu();
 	AppendMenu(popup_menus[CTXMENU].menu, MF_ENABLED, IDM_PASTE, "&Paste");
@@ -3322,6 +3325,7 @@ else if((UINT_PTR)wParam == TIMER_LOGROTATION) {  // log rotation
 			}
 			term->url_update = TRUE;
 			term_update(term);
+			urlhack_enable();
 		}
 #endif
 		/* Screen size changed ? */
