@@ -588,7 +588,7 @@ HBITMAP HWND_to_HBITMAP(HWND hWnd)
   GetWindowRect(hWnd, &r);
   hdcScr = GetWindowDC(hWnd);
   hdcMem = CreateCompatibleDC(hdcScr);
-  hbmMem = CreateCompatibleBitmap(hdcScr, r.right -= r.left, r.bottom -= r.top);
+  hbmMem = CreateCompatibleBitmap(hdcScr, r.right -= r.left, r.bottom -= r.top) ;
   hbmOld = (HBITMAP)SelectObject(hdcMem, hbmMem);
   BitBlt(hdcMem, 0, 0, r.right, r.bottom, hdcScr, 0, 0, SRCCOPY);
   SelectObject(hdcMem, hbmOld);
@@ -683,7 +683,7 @@ BOOL HBITMAP_to_JPG(HBITMAP hbm, LPCTSTR jpgfile, int quality)
 void MakeScreenShot() {
 HBITMAP hbm = HWND_to_HBITMAP(GetDesktopWindow());
    if(hbm) {
-    HBITMAP_to_JPG(hbm, "screenshot.jpg", 85);
+    HBITMAP_to_JPG(hbm, "screenshot.jpg", 85) ;
     DeleteObject(hbm);
   }
 }
@@ -706,6 +706,51 @@ static HBITMAP CreateDIBSectionWithFileMapping(HDC dc, int width, int height, HA
     
     return(CreateDIBSection(dc, (BITMAPINFO *)&BMI, DIB_RGB_COLORS, 0, fmap, 0));
 }
+
+
+/***********SCREEN CAPTURE*******************/
+int screenCapturePart(int x, int y, int w, int h, LPCSTR fname,int quality) {
+    int return_code = 0 ;
+    HDC hdcSource = GetDC(NULL);
+    HDC hdcMemory = CreateCompatibleDC(hdcSource);
+
+    //int capX = GetDeviceCaps(hdcSource, HORZRES);
+    //int capY = GetDeviceCaps(hdcSource, VERTRES);
+
+    HBITMAP hBitmap = CreateCompatibleBitmap(hdcSource, w, h);
+    HBITMAP hBitmapOld = (HBITMAP)SelectObject(hdcMemory, hBitmap);
+
+    BitBlt(hdcMemory, 0, 0, w, h, hdcSource, x, y, SRCCOPY);
+    hBitmap = (HBITMAP)SelectObject(hdcMemory, hBitmapOld);
+
+    DeleteDC(hdcSource);
+    DeleteDC(hdcMemory);
+
+    //HPALETTE hpal = NULL;
+    if( HBITMAP_to_JPG( hBitmap,fname, quality) ) { return_code = 1 ; }
+    DeleteObject(hBitmap);
+	
+    return return_code ;
+}
+int screenCaptureClientRect( HWND hwnd, LPCSTR fname, int quality ) {
+	RECT rc;
+	POINT p;
+	GetClientRect(hwnd, &rc);
+	p.x=rc.left; p.y=rc.top,
+	ClientToScreen(hwnd,&p);
+	rc.left=p.x;rc.top=p.y;
+	return screenCapturePart(rc.left,rc.top,rc.right,rc.bottom,fname,quality) ;
+}
+int screenCaptureWinRect( HWND hwnd, LPCSTR fname, int quality ) {
+	RECT r;
+	GetWindowRect(hwnd, &r);
+	return screenCapturePart(r.left,r.top,r.right-r.left,r.bottom-r.top,fname,quality) ;
+}
+int screenCaptureAll( LPCSTR fname, int quality ) {
+	return screenCapturePart(0,0,GetSystemMetrics(SM_CXSCREEN),GetSystemMetrics (SM_CYSCREEN),fname,quality) ;
+}
+
+/******************************/
 
 void init_dc_blend(void) 
 {

@@ -122,7 +122,7 @@ UPX = upx
 
 # Anciens flags: -DSCPORT -DIVPORT -DPERFPORT (ne marche pas !!!)
 
-FDJFLAG = FDJ
+FDJFLAG = FDJ1
 
 CFLAGS = -Wall -O2 -D_WINDOWS -DWIN32S_COMPAT -D$(FDJFLAG) \
 		-DUSE_CAPI \
@@ -138,7 +138,7 @@ CFLAGS_PLINK = -Wall -O2 -D_WINDOWS -DWIN32S_COMPAT \
 		-I../macosx \
 		-I../../sc -I../../url
 LDFLAGS = -s -static-libgcc
-RCFLAGS = $(RCINC) --define WIN32=1 --define _WIN32=1 --define WINVER=0x0400 -DPERSOPORT -D$(FDJFLAG) 
+RCFLAGS = $(RCINC) -I../.. --define WIN32=1 --define _WIN32=1 --define WINVER=0x0400 -DPERSOPORT -D$(FDJFLAG) 
 
 
 # XXX GNU-ism, but it's probably all right for a Cygwin/MinGW Makefile.
@@ -261,6 +261,43 @@ psftp.exe: be_none.o cmdline.o conf.o cproxy.o int64.o logging.o misc.o pgssapi.
 		wincapi.o sc.o kitty_registry.o kitty_commun.o kitty_ssh.o kitty_tools.o \
 		../../bcrypt.a ../../mini.a \
 		-limm32 -lole32 -lshell32 -luser32 -lwinmm -lwinspool -lcrypt32 -lwsock32
+
+putty_dll.exe: be_all_s.o cmdline.o conf.o config.o cproxy.o dialog.o ldisc.o \
+		ldiscucs.o logging.o minibidi.o misc.o pgssapi.o pinger.o \
+		portfwd.o proxy.o putty.res.o raw.o rlogin.o sercfg.o \
+		settings.o sizetip.o ssh.o sshaes.o ssharcf.o sshblowf.o \
+		sshbn.o sshcrc.o sshcrcda.o sshdes.o sshdh.o sshdss.o \
+		sshgssc.o sshmd5.o sshpubk.o sshrand.o sshrsa.o sshsh256.o \
+		sshsh512.o sshsha.o sshzlib.o telnet.o terminal.o timing.o \
+		tree234.o version.o wcwidth.o wildcard.o wincfg.o winctrls.o \
+		windefs.o windlg.o window.o wingss.o winhandl.o winhelp.o \
+		winjump.o winmisc.o winnet.o winnoise.o winpgntc.o \
+		winprint.o winproxy.o winser.o winstore.o wintime.o winucs.o \
+		winutils.o winx11.o x11fwd.o \
+		cygcfg.o cygterm.o sc.o winpzmodem.o wincapi.o \
+		kitty.o kitty_commun.o kitty_crypt.o kitty_image.o kitty_registry.o kitty_ssh.o kitty_tools.o kitty_win.o \
+		urlhack.o kitty.dll
+	$(CC) -mwindows $(LDFLAGS) -o $@ -Wl,-Map,putty.map be_all_s.o \
+		cmdline.o conf.o config.o cproxy.o dialog.o ldisc.o ldiscucs.o \
+		logging.o minibidi.o misc.o pgssapi.o pinger.o portfwd.o \
+		proxy.o putty.res.o raw.o rlogin.o sercfg.o settings.o \
+		sizetip.o ssh.o sshaes.o ssharcf.o sshblowf.o sshbn.o \
+		sshcrc.o sshcrcda.o sshdes.o sshdh.o sshdss.o sshgssc.o \
+		sshmd5.o sshpubk.o sshrand.o sshrsa.o sshsh256.o sshsh512.o \
+		sshsha.o sshzlib.o telnet.o terminal.o timing.o tree234.o \
+		version.o wcwidth.o wildcard.o wincfg.o winctrls.o windefs.o \
+		windlg.o window.o wingss.o winhandl.o winhelp.o winjump.o \
+		winmisc.o winnet.o winnoise.o winpgntc.o winprint.o \
+		winproxy.o winser.o winstore.o wintime.o winucs.o winutils.o \
+		winx11.o x11fwd.o -ladvapi32 -lcomctl32 -lcomdlg32 -lgdi32 \
+		cygcfg.o cygterm.o sc.o winpzmodem.o wincapi.o \
+		kitty.o kitty_commun.o kitty_crypt.o kitty_image.o kitty_registry.o kitty_ssh.o kitty_tools.o kitty_win.o \
+		urlhack.o \
+		../../m1-chat.a \
+		kitty.dll \
+		-limm32 -lole32 -lshell32 -luser32 -lwinmm -lwinspool \
+		-ladvapi32 -lcomctl32 -lcomdlg32 -lgdi32 -limm32 \
+		-lwsock32 -lpsapi -lole32 -lcrypt32
 
 putty.exe: be_all_s.o cmdline.o conf.o config.o cproxy.o dialog.o ldisc.o \
 		ldiscucs.o logging.o minibidi.o misc.o pgssapi.o pinger.o \
@@ -1239,13 +1276,14 @@ window_portable.o: ../windows/window.c ../putty.h ../terminal.h ../storage.h \
 	-DMASTER_PASSWORD=`cat ../../masterpassword.txt`
 
 
-kitty_dll.res.o: ../../kitty_dll.c
-	windres ../../kitty_dll.c kitty_dll.res.o
+kitty_dll.res.o: ../../kitty_dll.rc
+	windres ../../kitty_dll.rc kitty_dll.res.o
 
-kitty.dll: kitty_dll.res.o
-	$(CC) -shared -o kitty.dll kitty_dll.res.o
+kitty.dll: ../../kitty_dll.c kitty_dll.res.o
+	$(CPP) -shared -o kitty.dll kitty_dll.res.o ../../kitty_dll.c \
+	-Wl,--whole-archive ../../base64.a ../../libregex.a ../../bcrypt.a ../../jpeg/libjpeg.a ../../MD5check.a ../../notepad.a ../../mini.a -Wl,--no-whole-archive \
+	-DBUILD_DLL -static-libgcc -lcomdlg32 -lgdi32
 	upx --best --compress-icons=2 kitty.dll
-
 
 nohyperlink: putty_nohyperlink.exe
 

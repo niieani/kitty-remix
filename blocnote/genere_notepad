@@ -1,0 +1,14 @@
+rm *.bak 2> /dev/null
+
+windres notepad.rc notepad.res.o
+gcc -c notepad.c
+gcc -o notepad.exe notepad.o notepad.res.o -lcomdlg32 -lgdi32 -mwindows
+
+windres notepad.rc notepad.res.o
+gcc -c notepad.c -DNOMAIN
+
+ar cr notepad.a notepad.o
+ranlib notepad.a
+cp notepad.h ..
+cp notepad.rc ..
+cp notepad.a ..

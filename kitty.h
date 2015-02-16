@@ -1,6 +1,9 @@
 #ifndef KITTY_H
 #define KITTY_H
 #include <math.h>
+#include <sys/types.h>
+#include <process.h>
+#include <time.h>
 
 // Handle sur la fenetre principale
 extern HWND MainHwnd ;
@@ -334,7 +337,7 @@ void GotoConfigDirectory( void ) ;
 // Prototype de function de kitty_savedump.c
 void addkeypressed( UINT message, WPARAM wParam, LPARAM lParam, int shift_flag, int control_flag, int alt_flag, int altgr_flag, int win_flag ) ;
 
-
+char * get_param_str( const char * val ) ;
 
 #ifdef LAUNCHERPORT
 void InitLauncherRegistry( void ) ;
@@ -344,6 +347,7 @@ void cygterm_set_flag( int flag ) ;
 int cygterm_get_flag( void ) ;
 #endif
 
+int getpid(void) ;
 
 // Definition de la section du fichier de configuration
 #if (defined PERSOPORT) && (!defined FDJ)

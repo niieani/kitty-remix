@@ -25,6 +25,7 @@
 // Includes de KiTTY
 #include "kitty.h"
 #include "kitty_commun.h"
+#include "kitty_image.h"
 #include "kitty_crypt.h"
 #include "kitty_registry.h"
 #include "kitty_tools.h"
@@ -695,7 +696,7 @@ return NULL ;  /* Ce code est tres specifique et ne marche pas partout */
 	return NULL; 
 	} 
 
-// Liste des folder	
+// Liste des folder
 char **FolderList=NULL ;
 
 int readINI( const char * filename, const char * section, const char * key, char * pStr) ;
@@ -1555,13 +1556,13 @@ void SendKeyboardPlus( HWND hwnd, const char * st ) {
 				buffer[0] = '\0' ; j = 0 ;
 				i++ ;
 				}
-			else if( st[i+1] == 'p' ) { 
+			else if( st[i+1] == 'p' ) { 			// \p pause une seconde
 				SendKeyboard( hwnd, buffer ) ;
 				Sleep(1000);
 				buffer[0] = '\0' ; j = 0 ;
 				i++ ; 
 				}
-			else if( st[i+1] == 's' ) { 
+			else if( st[i+1] == 's' ) { 			// \s03 pause 3 secondes
 				SendKeyboard( hwnd, buffer ) ;
 				j = 1 ;
 				if( (st[i+2]>='0')&&(st[i+2]<='9')&&(st[i+3]>='0')&&(st[i+3]<='9') ) {
@@ -3329,7 +3330,14 @@ int InternalCommand( HWND hwnd, char * st ) {
 	else if( !strcmp( st, "/savedump" ) ) { SaveDump() ; return 1 ; }
 #endif
 #if (defined IMAGEPORT) && (!defined FDJ)
-	else if( !strcmp( st, "/screenshot" ) ) { MakeScreenShot() ; return 1 ; }
+	else if( !strcmp( st, "/screenshot" ) ) { 
+		char screenShotFile[1024] ;
+		sprintf( screenShotFile, "%s\\screenshot-%d-%ld.jpg", InitialDirectory, getpid(), time(0) );
+		screenCaptureClientRect( GetParent(hwnd), screenShotFile, 100 ) ;
+		//screenCaptureWinRect( GetParent(hwnd), screenShotFile, 100 ) ;
+		//screenCaptureAll( screenShotFile, 100 ) ;
+		//MakeScreenShot() ; 
+		return 1 ; }
 #endif
 	else if( !strcmp( st, "/savereg" ) ) { chdir( InitialDirectory ) ; SaveRegistryKey() ; return 1 ; }
 	else if( !strcmp( st, "/savesessions" ) ) { 

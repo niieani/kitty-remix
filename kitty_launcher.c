@@ -374,8 +374,8 @@ void DisplayContextMenu( HWND hwnd, HMENU menu ) {
 
 	}
 	
-void RunConfig( Conf * conf /*Config * cfg*/ ) {
-
+void RunConfig( Conf * conf ) {
+	
 		char b[2048];
 		char c[180], *cl;
 		int freecl = FALSE;
@@ -394,9 +394,7 @@ void RunConfig( Conf * conf /*Config * cfg*/ ) {
 		    SECURITY_ATTRIBUTES sa;
 		    void *p;
 		    int size;
-
 		    size = conf_serialised_size(conf);
-
 		    sa.nLength = sizeof(sa);
 		    sa.lpSecurityDescriptor = NULL;
 		    sa.bInheritHandle = TRUE;
@@ -707,7 +705,7 @@ LRESULT CALLBACK Launcher_WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
 		case WM_COMMAND: {//Commandes du menu
 			switch( LOWORD(wParam) ) {
 				case IDM_ABOUT:
-					MessageBox(hwnd,"     TTY Launcher\nSession launcher for TTY terminal emulator\n(c), 2009-2014","About", MB_OK ) ;
+					MessageBox(hwnd,"     TTY Launcher\nSession launcher for TTY terminal emulator\n(c), 2009-2015","About", MB_OK ) ;
 					break ;
 				case IDM_QUIT:
 					ResShell = Shell_NotifyIcon(NIM_DELETE, &TrayIcone) ;

@@ -151,7 +151,28 @@ PSID get_user_sid(void)
 }
 
 #endif
+#ifdef PERSOPORT
+static int confirm_key_usage(char* fingerprint, char* comment) {
+	const char* title = "Confirm SSH Key usage";
+	char* message = NULL;
+	int result = IDYES; // successful result is the default
 
+	if ((NULL != strstr(comment, "needs confirm")) ||
+		(NULL != strstr(comment, "need confirm")) ||
+		(NULL != strstr(comment, "confirmation"))) {
+		
+		message = dupprintf("Allow authentication with key with fingerprint\n%s\ncomment: %s", fingerprint, comment);
+		result = MessageBox(NULL, message, title, MB_ICONQUESTION | MB_YESNO);
+		sfree(message);
+	}
+
+	if (result != IDYES) {
+		return 0;
+	} else {
+		return 1;
+	}
+}
+#endif
 int agent_query(void *in, int inlen, void **out, int *outlen,
 		void (*callback)(void *, void *, int), void *callback_ctx)
 {

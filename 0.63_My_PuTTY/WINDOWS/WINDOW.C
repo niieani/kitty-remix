@@ -206,6 +206,7 @@ void urlhack_enable(void);
 #endif
 
 #ifdef PERSOPORT
+#include <sys/types.h>
 #include <process.h>
 #include <math.h>
 #include "../../kitty.h"
@@ -738,7 +739,9 @@ InitWinMain();
 			GenerePrivateKey( "private.key.ppk" ) ; return  0 ;
 #endif
 		} else if( !strcmp(p, "-ed") ) {
-			return Notepad_WinMain(inst, prev, cmdline, show) ;
+			char buffer[1024];
+			sprintf(buffer, "%s|%s", (char*)get_param_str("INI"), (char*)get_param_str("SAV") ) ;
+			return Notepad_WinMain(inst, prev, buffer, show) ;
 #ifdef LAUNCHERPORT
 		} else if( !strcmp(p, "-launcher") ) {
 			return Launcher_WinMain(inst, prev, cmdline, show) ;
@@ -1431,6 +1434,9 @@ ManagePortKnocking(conf_get_str(conf,CONF_host),conf_get_str(conf,CONF_portknock
 #endif
 
     start_backend();
+#ifdef RECONNECTPORT
+	last_reconnect = time(NULL);
+#endif
 #ifdef HYPERLINKPORT
 	/*
 	 * HACK: PuttyTray / Nutty
@@ -1789,12 +1795,14 @@ void connection_fatal(void *frontend, char *fmt, ...)
     va_list ap;
     char *stuff, morestuff[100];
 #ifdef RECONNECTPORT
-	if ( conf_get_int(conf,CONF_failure_reconnect)/*cfg.failure_reconnect*/) {
+	if ( conf_get_int(conf,CONF_failure_reconnect) ) {
+/*
  		time_t tnow = time(NULL);
  		close_session();
  
- 		if(last_reconnect && (tnow - last_reconnect) < GetReconnectDelay() ) {
- 			Sleep(1000);
+ 		if( last_reconnect && ((tnow - last_reconnect) < GetReconnectDelay()) ) {
+			logevent(NULL, "Lost connection, waiting for delay..." );
+ 			Sleep(GetReconnectDelay()*1000);
  		}
  
  		last_reconnect = tnow;
@@ -1803,6 +1811,18 @@ void connection_fatal(void *frontend, char *fmt, ...)
 		backend_connected = 0 ;
  		start_backend();
 		SetTimer(hwnd, TIMER_INIT, init_delay, NULL) ;
+*/
+		close_session() ;
+		logevent(NULL, "Lost connection, waiting for delay..." ) ;
+		int nbSecWait = GetReconnectDelay() ;
+		if( nbSecWait > 600 ) { nbSecWait = 600 ; }
+		while( nbSecWait>=0 ) { Sleep( 1000 ) ; nbSecWait-- ; }
+		logevent(NULL, "Lost connection, reconnecting...") ;
+		term_pwron(term, FALSE) ;
+		backend_connected = 0 ;
+ 		start_backend() ;
+		SetTimer(hwnd, TIMER_INIT, init_delay, NULL) ;
+		
  	} else {
  		va_start(ap, fmt);
 		stuff = dupvprintf(fmt, ap);
@@ -1811,7 +1831,7 @@ void connection_fatal(void *frontend, char *fmt, ...)
  		MessageBox(hwnd, stuff, morestuff, MB_ICONERROR | MB_OK);
  		sfree(stuff);
  
- 		if ( conf_get_int(conf,CONF_close_on_exit)/*cfg.close_on_exit*/ == FORCE_ON)
+ 		if ( conf_get_int(conf,CONF_close_on_exit) == FORCE_ON)
  		PostQuitMessage(1);
  		else {
  		must_close_session = TRUE;
@@ -2847,7 +2867,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 else if((UINT_PTR)wParam == TIMER_INIT) {  // Initialisation
 	char buffer[4096] = "" ;
 
-	if( (conf_get_int(conf,CONF_protocol)/*cfg.protocol*/ == PROT_SSH) && (!backend_connected) ) break ; // On sort si en SSH on n'est pas connecte
+	if( (conf_get_int(conf,CONF_protocol) == PROT_SSH) && (!backend_connected) ) break ; // On sort si en SSH on n'est pas connecte
 	// Lancement d'une (ou plusieurs separees par \\n) commande(s) automatique(s) a l'initialisation
 	KillTimer( hwnd, TIMER_INIT ) ;
 
@@ -4576,7 +4596,7 @@ else if((UINT_PTR)wParam == TIMER_LOGROTATION) {  // log rotation
 		}
 	KEY_END:
 
-	case WM_SYSKEYDOWN:
+	case WM_SYSKEYUP:
 #ifdef PERSOPORT
           if( (wParam == VK_TAB) && (GetKeyState(VK_CONTROL) < 0) && (GetKeyState(VK_MENU) >= 0) && (GetKeyState(VK_SHIFT) >= 0) && conf_get_int(conf, CONF_ctrl_tab_switch)) {
              struct ctrl_tab_info info = {
@@ -4586,12 +4606,13 @@ else if((UINT_PTR)wParam == TIMER_LOGROTATION) {  // log rotation
              info.next_hi_date_time = info.self_hi_date_time = GetWindowLong(hwnd, 0);
              info.next_lo_date_time = info.self_lo_date_time = GetWindowLong(hwnd, 4);
              EnumWindows(CtrlTabWindowProc, (LPARAM) &info);
-             if (info.next != NULL)
-                 SetForegroundWindow(info.next);
+             if (info.next != NULL) 
+		if( info.next != hwnd )
+		   SetForegroundWindow(info.next);
              return 0;
          }
 #endif
-	case WM_SYSKEYUP:
+	case WM_SYSKEYDOWN:
 	/* HACK: PuttyTray / Nutty : END */
 #else
       case WM_KEYDOWN:
@@ -4607,6 +4628,12 @@ else if((UINT_PTR)wParam == TIMER_LOGROTATION) {  // log rotation
 		if( debug_flag ) addkeypressed( message, wParam, lParam, GetKeyState(VK_SHIFT)&0x8000, GetKeyState(VK_CONTROL)&0x8000, (GetKeyState(VK_MENU)&0x8000)||(GetKeyState(VK_LMENU)&0x8000),GetKeyState(VK_RMENU)&0x8000, (GetKeyState(VK_RWIN)&0x8000)||(GetKeyState(VK_LWIN)&0x8000 ) );
 #endif
 
+		if( (wParam==VK_SNAPSHOT)&&(GetKeyState(VK_CONTROL)&0x8000) ) {
+			char screenShotFile[1024] ;
+			sprintf( screenShotFile, "%s\\screenshot-%d-%ld.jpg", InitialDirectory, getpid(), time(0) );
+			screenCaptureClientRect( hwnd, screenShotFile, 100 ) ;
+		}
+		
 		if((wParam==VK_TAB)&&(message==WM_KEYDOWN)&&(GetKeyState(VK_CONTROL)&0x8000)&&(GetKeyState(VK_SHIFT)&0x8000)) 
 			{ SetShortcutsFlag( abs(GetShortcutsFlag()-1) ) ; return 0 ; }
       
@@ -4812,20 +4839,32 @@ else if((UINT_PTR)wParam == TIMER_LOGROTATION) {  // log rotation
 	return 0;
 #ifdef RECONNECTPORT
       case WM_POWERBROADCAST:
-	if(conf_get_int(conf,CONF_wakeup_reconnect)/*cfg.wakeup_reconnect*/) {
+	if(conf_get_int(conf,CONF_wakeup_reconnect)) {
 		switch(wParam) {
 			case PBT_APMRESUMESUSPEND:
 			case PBT_APMRESUMEAUTOMATIC:
 			case PBT_APMRESUMECRITICAL:
 			case PBT_APMQUERYSUSPENDFAILED:
 				if(session_closed && !back) {
+					/*
 					time_t tnow = time(NULL);
 					
-					if(last_reconnect && (tnow - last_reconnect) < GetReconnectDelay() ) {
-						Sleep(1000);
+					if(last_reconnect && ((tnow - last_reconnect) < GetReconnectDelay()) ) {
+						logevent(NULL, "Woken up from suspend, waiting for delay..." );
+						Sleep(GetReconnectDelay()*1000);
 					}
 					last_reconnect = tnow;
 					logevent(NULL, "Woken up from suspend, reconnecting...");
+					term_pwron(term, FALSE);
+					backend_connected = 0 ;
+					start_backend();
+					SetTimer(hwnd, TIMER_INIT, init_delay, NULL) ;
+					*/
+					logevent(NULL, "Woken up from suspend, waiting for delay..." ) ;
+					int nbSecWait = GetReconnectDelay() ;
+					if( nbSecWait > 600 ) { nbSecWait = 600 ; }
+					while( nbSecWait>=0 ) { Sleep( 1000 ) ; nbSecWait-- ; }
+					logevent(NULL, "Woken up from suspend, reconnecting...") ;
 					term_pwron(term, FALSE);
 					backend_connected = 0 ;
 					start_backend();

@@ -355,16 +355,16 @@ void save_open_settings_forced(char *filename, Conf *conf) {
 #ifdef CYGTERMPORT
     //if (do_host)
 	write_setting_i_forced(sesskey, "CygtermAltMetabit", conf_get_int(conf, CONF_alt_metabit));
-	write_setting_i_forced(sesskey, "CygtermAutoPath", conf_get_int(conf, CONF_cygautopath) /*cfg->cygautopath*/);
+	write_setting_i_forced(sesskey, "CygtermAutoPath", conf_get_int(conf, CONF_cygautopath) );
 	write_setting_i_forced(sesskey, "Cygterm64", conf_get_int(conf, CONF_cygterm64));
-	write_setting_s_forced(sesskey, "CygtermCommand", conf_get_str(conf, CONF_cygcmd) /*cfg->cygcmd*/);
+	write_setting_s_forced(sesskey, "CygtermCommand", conf_get_str(conf, CONF_cygcmd) );
 #endif
 #ifdef ZMODEMPORT
-    write_setting_filename_forced(sesskey, "rzCommand", conf_get_filename(conf, CONF_rzcommand) /*cfg->rzcommand*/);
-    write_setting_s_forced(sesskey, "rzOptions", conf_get_str(conf, CONF_rzoptions) /*cfg->rzoptions*/);
-    write_setting_filename_forced(sesskey, "szCommand", conf_get_filename(conf, CONF_szcommand) /*cfg->szcommand*/);
-    write_setting_s_forced(sesskey, "szOptions", conf_get_str(conf, CONF_szoptions) /*cfg->szoptions*/);
-    write_setting_s_forced(sesskey, "zDownloadDir", conf_get_str(conf, CONF_zdownloaddir) /*cfg->zdownloaddir*/);
+    write_setting_filename_forced(sesskey, "rzCommand", conf_get_filename(conf, CONF_rzcommand) );
+    write_setting_s_forced(sesskey, "rzOptions", conf_get_str(conf, CONF_rzoptions) );
+    write_setting_filename_forced(sesskey, "szCommand", conf_get_filename(conf, CONF_szcommand) );
+    write_setting_s_forced(sesskey, "szOptions", conf_get_str(conf, CONF_szoptions) );
+    write_setting_s_forced(sesskey, "zDownloadDir", conf_get_str(conf, CONF_zdownloaddir) );
 #endif
 #ifdef PERSOPORT
     if( conf_get_int(conf, CONF_transparencynumber)<-1 ) conf_set_int(conf, CONF_transparencynumber,-1) ;
@@ -424,6 +424,12 @@ void load_open_settings_forced(char *filename, Conf *conf) {
     int i;
     char *prot;
 
+		
+	Conf * confDef ;
+	confDef = conf_new() ;
+	do_defaults( "Default Settings" , confDef);
+		
+		
 #ifdef PERSOPORT
     /*
      * HACK: PuTTY-url
@@ -519,7 +525,7 @@ void load_open_settings_forced(char *filename, Conf *conf) {
     gppi_forced(sesskey, "NoPTY", 0, conf, CONF_nopty);
     gppi_forced(sesskey, "Compression", 0, conf, CONF_compression);
     gppi_forced(sesskey, "TryAgent", 1, conf, CONF_tryagent);
-    gppi_forced(sesskey, "AgentFwd", 0, conf, CONF_agentfwd);
+    gppi_forced(sesskey, "AgentFwd", conf_get_int(confDef,CONF_agentfwd), conf, CONF_agentfwd);
     gppi_forced(sesskey, "ChangeUsername", 0, conf, CONF_change_username);
     gppi_forced(sesskey, "GssapiFwd", 0, conf, CONF_gssapifwd);
     gprefs_forced(sesskey, "Cipher", "\0",
@@ -879,16 +885,19 @@ void load_open_settings_forced(char *filename, Conf *conf) {
 #endif
 #ifdef CYGTERMPORT
     gppi_forced(sesskey, "CygtermAltMetabit", 0, conf, CONF_alt_metabit);
-    gppi_forced(sesskey, "CygtermAutoPath", 1, conf, CONF_cygautopath /*&cfg->cygautopath*/);
+    gppi_forced(sesskey, "CygtermAutoPath", 1, conf, CONF_cygautopath );
     gppi_forced(sesskey, "Cygterm64", 0, conf, CONF_cygterm64);
-    gpps_forced(sesskey, "CygtermCommand", "", conf, CONF_cygcmd /*cfg->cygcmd, sizeof(cfg->cygcmd)*/);
+    gpps_forced(sesskey, "CygtermCommand", "", conf, CONF_cygcmd );
 #endif
 #ifdef ZMODEMPORT
-    gppfile_forced(sesskey, "rzCommand", conf, CONF_rzcommand /*cfg->rzcommand, sizeof(cfg->rzcommand)*/);
-    gpps_forced(sesskey, "rzOptions", "-e -v", conf, CONF_rzoptions /*cfg->rzoptions, sizeof(cfg->rzoptions)*/);
-    gppfile_forced(sesskey, "szCommand", conf, CONF_szcommand /*cfg->szcommand, sizeof(cfg->szcommand)*/);
-    gpps_forced(sesskey, "szOptions", "-e -v", conf, CONF_szoptions /*cfg->szoptions, sizeof(cfg->szoptions)*/);
-    gpps_forced(sesskey, "zDownloadDir", "C:\\", conf, CONF_zdownloaddir /*cfg->zdownloaddir, sizeof(cfg->zdownloaddir)*/);
+    gppfile_forced(sesskey, "rzCommand", conf, CONF_rzcommand );
+    if( strlen(conf_get_filename( conf, CONF_rzcommand)->path) == 0 ) { conf_set_filename(conf,CONF_rzcommand,conf_get_filename(confDef,CONF_rzcommand)) ; }
+    gpps_forced(sesskey, "rzOptions", conf_get_str(confDef, CONF_rzoptions), conf, CONF_rzoptions );
+    gppfile_forced(sesskey, "szCommand", conf, CONF_szcommand );
+    if( strlen(conf_get_filename( conf, CONF_szcommand)->path) == 0 ) { conf_set_filename(conf,CONF_szcommand,conf_get_filename(confDef,CONF_szcommand)) ; }
+    gpps_forced(sesskey, "szOptions",  conf_get_str(confDef, CONF_szoptions), conf, CONF_szoptions );
+    //gpps_forced(sesskey, "zDownloadDir", "C:\\", conf, CONF_zdownloaddir );
+    gpps_forced(sesskey, "zDownloadDir", conf_get_str(confDef, CONF_zdownloaddir) , conf, CONF_zdownloaddir );
 #endif
 #ifdef PERSOPORT
     gppi_forced(sesskey, "TransparencyValue", 0, conf, CONF_transparencynumber /*&cfg->transparencynumber*/ ) ;
@@ -947,6 +956,9 @@ void load_open_settings_forced(char *filename, Conf *conf) {
 // END COPY/PASTE
 	conf_set_str( conf, CONF_folder, "Default") ;
 	fclose(sesskey) ;
+	
+	
+	conf_free( confDef ) ;
 }
 
 

@@ -1272,11 +1272,11 @@ void load_open_settings(void *sesskey, Conf *conf)
     gpps(sesskey, "CygtermCommand", "", conf, CONF_cygcmd /*cfg->cygcmd, sizeof(cfg->cygcmd)*/);
 #endif
 #ifdef ZMODEMPORT
-    gppfile(sesskey, "rzCommand", conf, CONF_rzcommand /*cfg->rzcommand, sizeof(cfg->rzcommand)*/);
-    gpps(sesskey, "rzOptions", "-e -v", conf, CONF_rzoptions /*cfg->rzoptions, sizeof(cfg->rzoptions)*/);
-    gppfile(sesskey, "szCommand", conf, CONF_szcommand /*cfg->szcommand, sizeof(cfg->szcommand)*/);
-    gpps(sesskey, "szOptions", "-e -v", conf, CONF_szoptions /*cfg->szoptions, sizeof(cfg->szoptions)*/);
-    gpps(sesskey, "zDownloadDir", "C:\\", conf, CONF_zdownloaddir /*cfg->zdownloaddir, sizeof(cfg->zdownloaddir)*/);
+    gppfile(sesskey, "rzCommand", conf, CONF_rzcommand );
+    gpps(sesskey, "rzOptions", "-e -v", conf, CONF_rzoptions );
+    gppfile(sesskey, "szCommand", conf, CONF_szcommand );
+    gpps(sesskey, "szOptions", "-e -v", conf, CONF_szoptions );
+    gpps(sesskey, "zDownloadDir", "C:\\", conf, CONF_zdownloaddir );
 #endif
 #ifdef PERSOPORT
     gppi(sesskey, "TransparencyValue", 0, conf, CONF_transparencynumber /*&cfg->transparencynumber*/ ) ;
